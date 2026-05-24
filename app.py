@@ -2,7 +2,7 @@ import streamlit as st
 import whisper
 import os
 import time
-from moviepy.editor import ColorClip, CompositeVideoClip, ImageClip
+from moviepy.editor import ColorClip, CompositeVideoClip, ImageClip, TextClip
 
 # --- 1. DISEÑO PREMIUM ---
 def aplicar_estilo_goyo():
@@ -36,6 +36,8 @@ st.markdown("### El Creador de Karaokes para YouTube y TikTok")
 formato = st.radio("Elige el formato:", ("YouTube (16:9)", "TikTok (9:16)"))
 audio_file = st.file_uploader("Sube tu canción aquí", type=["mp3", "wav"])
 
+if "letra" not in st.session_state: st.session_state.letra = ""
+
 if audio_file is not None:
     ruta_audio = os.path.abspath("temp_audio.mp3")
     with open(ruta_audio, "wb") as f: f.write(audio_file.getbuffer())
@@ -49,28 +51,29 @@ if audio_file is not None:
         barra.progress(20)
         model = whisper.load_model("base")
         result = model.transcribe(ruta_audio)
-        letra = result["text"]
+        st.session_state.letra = result["text"]
         
-        # Paso 2: Diseño de Video (FONDO AZUL Y LOGO)
-        texto_estado.markdown("#### 🎨 2/3: Diseñando el Karaoke en formato " + formato)
+        # Paso 2: Diseño de Video
+        texto_estado.markdown("#### 🎨 2/3: Diseñando el Karaoke...")
         barra.progress(60)
-        
         ancho, alto = (1280, 720) if formato == "YouTube (16:9)" else (720, 1280)
         
-        # Fondo Azul (0, 0, 255)
+        # FONDO AZUL (0, 0, 255)
         video_base = ColorClip(size=(ancho, alto), color=(0, 0, 255)).set_duration(10)
         
-        # Logo arriba a la derecha
-        if os.path.exists("logo.png"):
-            logo = ImageClip("logo.png").resize(height=100).set_position(("right", "top")).set_duration(10)
-            video_final = CompositeVideoClip([video_base, logo])
-        else:
+        # LOGO (Escudo de protección: solo si existe, no rompe si falla)
+        try:
+            if os.path.exists("logo.png"):
+                logo = ImageClip("logo.png").resize(height=100).set_position(("right", "top")).set_duration(10)
+                video_final = CompositeVideoClip([video_base, logo])
+            else:
+                video_final = video_base
+        except:
             video_final = video_base
         
         # Paso 3: Renderizado
-        texto_estado.markdown("#### 🎬 3/3: Procesando video final...")
+        texto_estado.markdown("#### 🎬 3/3: Procesando video...")
         barra.progress(85)
-        
         archivo_salida = "karaoke_goyo.mp4"
         video_final.write_videofile(archivo_salida, fps=24, codec="libx264", audio=ruta_audio)
         
@@ -80,8 +83,7 @@ if audio_file is not None:
         
         st.video(archivo_salida)
         with open(archivo_salida, "rb") as file:
-            st.download_button("📥 DESCARGAR", data=file, 
-                               file_name=f"GoyoKaraoke_{formato.split()[0]}.mp4", mime="video/mp4")
+            st.download_button("📥 DESCARGAR", data=file, file_name="GoyoKaraoke.mp4", mime="video/mp4")
         
         st.markdown("### 📝 Letra detectada:")
-        st.info(letra)
+        st.info(st.session_state.letra)
