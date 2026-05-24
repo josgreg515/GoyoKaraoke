@@ -1,5 +1,2 @@
 streamlit
-openai-whisper
-moviepy
-Pillow
-yt-dlp
+pytube
