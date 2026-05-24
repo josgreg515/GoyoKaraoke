@@ -2,7 +2,6 @@ import streamlit as st
 import moviepy.editor as mp
 import whisper
 import os
-
 st.title("🎤 GoyoKaraoke")
 
 formato = st.radio("Elige el formato de tu video:", ("YouTube (Horizontal - 16:9)", "TikTok (Vertical - 9:16)"))
