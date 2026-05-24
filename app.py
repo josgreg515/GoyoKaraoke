@@ -1,22 +1,23 @@
-import streamlit as st
 import os
+import subprocess
+import sys
 
-# Configuración básica
-st.set_page_config(page_title="GoyoKaraoke", page_icon="🎤")
-st.title("🎤 GoyoKaraoke")
-
-# Intentamos importar librerías complejas solo cuando sea necesario
+# Forzamos la instalación de la librería por si el servidor no la detectó
 try:
-    import whisper
-    from moviepy.editor import ColorClip, TextClip, CompositeVideoClip
-    LIBRERIAS_LISTAS = True
-except ImportError as e:
-    LIBRERIAS_LISTAS = False
-    st.error(f"Error de carga de librerías: {e}. Revisa tu archivo requirements.txt")
+    import moviepy
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "moviepy", "imageio-ffmpeg"])
 
-if LIBRERIAS_LISTAS:
-    audio_file = st.file_uploader("Sube tu canción aquí", type=["mp3", "wav"])
-    if audio_file:
-        st.success("Archivo subido correctamente.")
-        if st.button("Generar Karaoke"):
-            st.info("Procesando...")
+import streamlit as st
+import whisper
+from moviepy.editor import ColorClip, CompositeVideoClip
+
+st.title("🎤 GoyoKaraoke - Modo Rescate")
+
+archivo = st.file_uploader("Sube tu canción", type=["mp3", "wav"])
+
+if archivo:
+    if st.button("Generar Karaoke"):
+        st.write("Procesando...")
+        # Aquí continúa el código...
+        st.success("¡Librerías cargadas!")
