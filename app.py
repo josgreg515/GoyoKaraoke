@@ -1,8 +1,8 @@
 import streamlit as st
 import os
-import yt_dlp
+from pytube import YouTube
 
-# --- 1. DISEÑO PREMIUM (Tu estilo original) ---
+# --- 1. DISEÑO PREMIUM ---
 def aplicar_estilo_goyo():
     fondo_url = "https://images.unsplash.com/photo-1493225255756-d9584f8606e9?q=80&w=1920"
     st.markdown(f"""
@@ -21,37 +21,34 @@ with col2:
     if os.path.exists("logo.png"): st.image("logo.png")
     else: st.title("📥 GoyoDownloader")
 
-st.markdown("### Descarga videos de YouTube de forma rápida")
-
 # --- 3. LÓGICA DE DESCARGA ---
 url = st.text_input("Pega el enlace de YouTube aquí:")
-formato = st.radio("¿Qué deseas descargar?", ("Video (MP4)", "Solo Audio (MP3)"))
 
-if st.button("🚀 INICIAR DESCARGA"):
-    if url:
-        barra = st.progress(0)
-        st.write("🔄 Conectando con YouTube...")
+if url:
+    try:
+        # Visualización previa del video
+        st.video(url)
         
-        # Configuración para yt-dlp
-        opciones = {
-            'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best' if formato == "Video (MP4)" else 'bestaudio/best',
-            'outtmpl': 'descarga.%(ext)s',
-        }
+        formato = st.radio("¿Qué deseas descargar?", ("Video (MP4)", "Solo Audio (MP3)"))
         
-        try:
-            with yt_dlp.YoutubeDL(opciones) as ydl:
-                st.write("⬇️ Descargando...")
-                barra.progress(50)
-                ydl.download([url])
-                barra.progress(100)
+        if st.button("🚀 INICIAR DESCARGA"):
+            barra = st.progress(0)
+            st.write("🔄 Procesando video...")
             
-            archivo = "descarga.mp4" if formato == "Video (MP4)" else "descarga.webm"
+            yt = YouTube(url)
+            barra.progress(50)
             
-            st.success("¡Descarga completada!")
-            with open(archivo, "rb") as f:
-                st.download_button("📥 DESCARGAR ARCHIVO", f, file_name=f"GoyoDownload.{'mp4' if formato == 'Video (MP4)' else 'mp3'}")
-        
-        except Exception as e:
-            st.error(f"Error al descargar: {e}")
-    else:
-        st.warning("Por favor, pega un enlace primero.")
+            if formato == "Video (MP4)":
+                stream = yt.streams.get_highest_resolution()
+            else:
+                stream = yt.streams.get_audio_only()
+                
+            stream.download(filename="descarga_goyo")
+            barra.progress(100)
+            st.success("¡Descarga lista!")
+            
+            with open("descarga_goyo", "rb") as f:
+                st.download_button("📥 DESCARGAR ARCHIVO", f, file_name="GoyoDescarga.mp4")
+                
+    except Exception as e:
+        st.error("No se pudo cargar el video. Intenta con otro enlace.")
