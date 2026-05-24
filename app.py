@@ -4,15 +4,10 @@ import os
 
 st.title("🎤 GoyoKaraoke")
 
-# ... (tu código de radio y uploader)
+# Definimos la variable al principio
+audio_file = st.file_uploader("Sube tu canción aquí", type=["mp3", "wav"])
 
 if audio_file is not None:
-    # Guardar audio
-    with open("temp_audio.mp3", "wb") as f:
-        f.write(audio_file.getbuffer())
-    
+    st.write("Archivo detectado correctamente.")
     if st.button("Generar Karaoke"):
-        st.info("Transcribiendo con Whisper...")
-        model = whisper.load_model("base")
-        result = model.transcribe("temp_audio.mp3")
-        st.write(result["text"])
+        st.write("Procesando...")
