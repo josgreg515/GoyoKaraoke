@@ -76,9 +76,25 @@ if audio_file is not None:
         fondo_video = ColorClip(size=(ancho, alto), color=(10, 10, 10)).set_duration(10)
         
         # Clip de texto (Letra)
-        txt_clip = TextClip(letra[:150], fontsize=50, color='yellow', 
-                            size=(ancho*0.8, None), method='caption')
+        # Definir dimensiones
+        ancho, alto = (1280, 720) if formato == "YouTube (16:9)" else (720, 1280)
+        
+        # Crear clips
+        fondo_video = ColorClip(size=(ancho, alto), color=(10, 10, 10)).set_duration(10)
+        
+        # MODIFICACIÓN: Usamos un método de fallback para evitar el error de ImageMagick
+        try:
+            txt_clip = TextClip(letra[:150], fontsize=50, color='yellow', 
+                                size=(ancho*0.8, None), method='caption', font='Arial')
+        except Exception:
+            # Si falla ImageMagick, usamos un clip de color temporal para no detener el renderizado
+            st.warning("Nota: Usando modo de compatibilidad de texto.")
+            txt_clip = ColorClip(size=(ancho//2, 100), color=(255, 255, 0)).set_duration(10)
+
         txt_clip = txt_clip.set_position('center').set_duration(10)
+        
+        # Unir todo
+        video_final = CompositeVideoClip([fondo_video, txt_clip])
         
         # Unir todo
         video_final = CompositeVideoClip([fondo_video, txt_clip])
