@@ -1,6 +1,7 @@
 import streamlit as st
 import whisper
 import os
+import time
 from moviepy.editor import ColorClip, CompositeVideoClip, ImageClip
 
 # --- 1. DISEÑO PREMIUM ---
@@ -13,7 +14,7 @@ def aplicar_estilo_goyo():
             background-size: cover;
             background-position: center;
         }}
-        .stMarkdown, h1, h2, h3, p {{ color: #FFFFFF !important; text-shadow: 2px 2px 8px #000000; }}
+        .stMarkdown, h1, h2, h3, p {{ color: #FFFFFF !important; text-shadow: 2px 2px 8px #000000; font-family: 'Arial', sans-serif; }}
         .stButton>button {{
             background-color: #FF0000 !important; color: white !important;
             border-radius: 30px; height: 3em; width: 100%; font-weight: bold; border: 2px solid white;
@@ -24,55 +25,63 @@ def aplicar_estilo_goyo():
 aplicar_estilo_goyo()
 
 # --- 2. LOGO ---
-if os.path.exists("logo.png"): st.image("logo.png")
-else: st.title("🎤 GoyoKaraoke")
+col1, col2, col3 = st.columns([1,2,1])
+with col2:
+    if os.path.exists("logo.png"): st.image("logo.png")
+    else: st.title("🎤 GoyoKaraoke")
+
+st.markdown("### El Creador de Karaokes para YouTube y TikTok")
 
 # --- 3. CONFIGURACIÓN ---
 formato = st.radio("Elige el formato:", ("YouTube (16:9)", "TikTok (9:16)"))
-audio_file = st.file_uploader("Sube tu canción", type=["mp3", "wav"])
-
-if "letra" not in st.session_state: st.session_state.letra = ""
+audio_file = st.file_uploader("Sube tu canción aquí", type=["mp3", "wav"])
 
 if audio_file is not None:
     ruta_audio = os.path.abspath("temp_audio.mp3")
     with open(ruta_audio, "wb") as f: f.write(audio_file.getbuffer())
 
-    # PASO 1: Transcripción
-    if st.button("👂 1. ANALIZAR LETRA"):
-        with st.spinner("La IA está escuchando..."):
-            model = whisper.load_model("base")
-            result = model.transcribe(ruta_audio)
-            st.session_state.letra = result["text"]
-
-    # PASO 2: Revisión de Letra
-    if st.session_state.letra:
-        st.markdown("### ✍️ Corrige la letra si es necesario:")
-        st.session_state.letra = st.text_area("Letra:", st.session_state.letra, height=200)
-
-        # PASO 3: Generación de Video
-        if st.button("🚀 2. GENERAR VIDEO FINAL"):
-            with st.spinner("Procesando video profesional..."):
-                ancho, alto = (1280, 720) if formato == "YouTube (16:9)" else (720, 1280)
-                
-                # FONDO AZUL PROFESIONAL
-                video_base = ColorClip(size=(ancho, alto), color=(0, 0, 255)).set_duration(10)
-                
-                # LOGO POSICIONADO
-                if os.path.exists("logo.png"):
-                    logo = ImageClip("logo.png").resize(height=80)
-                    logo = logo.set_position(("right", "top")).set_duration(10)
-                    video_final = CompositeVideoClip([video_base, logo])
-                else:
-                    video_final = video_base
-                
-                archivo_salida = "karaoke_goyo.mp4"
-                video_final.write_videofile(archivo_salida, fps=24, codec="libx264", audio=ruta_audio)
-                
-                st.success("¡Video generado con fondo azul y logo!")
-                st.video(archivo_salida)
-                
-                with open(archivo_salida, "rb") as file:
-                    st.download_button("📥 DESCARGAR", data=file, file_name="GoyoKaraoke.mp4", mime="video/mp4")
-                
-                st.markdown("### 📝 Letra definitiva para tu edición:")
-                st.info(st.session_state.letra)
+    if st.button("🚀 GENERAR VIDEO KARAOKE"):
+        barra = st.progress(0)
+        texto_estado = st.empty()
+        
+        # Paso 1: Transcripción
+        texto_estado.markdown("#### 👂 1/3: La IA está escuchando tu canción...")
+        barra.progress(20)
+        model = whisper.load_model("base")
+        result = model.transcribe(ruta_audio)
+        letra = result["text"]
+        
+        # Paso 2: Diseño de Video (FONDO AZUL Y LOGO)
+        texto_estado.markdown("#### 🎨 2/3: Diseñando el Karaoke en formato " + formato)
+        barra.progress(60)
+        
+        ancho, alto = (1280, 720) if formato == "YouTube (16:9)" else (720, 1280)
+        
+        # Fondo Azul (0, 0, 255)
+        video_base = ColorClip(size=(ancho, alto), color=(0, 0, 255)).set_duration(10)
+        
+        # Logo arriba a la derecha
+        if os.path.exists("logo.png"):
+            logo = ImageClip("logo.png").resize(height=100).set_position(("right", "top")).set_duration(10)
+            video_final = CompositeVideoClip([video_base, logo])
+        else:
+            video_final = video_base
+        
+        # Paso 3: Renderizado
+        texto_estado.markdown("#### 🎬 3/3: Procesando video final...")
+        barra.progress(85)
+        
+        archivo_salida = "karaoke_goyo.mp4"
+        video_final.write_videofile(archivo_salida, fps=24, codec="libx264", audio=ruta_audio)
+        
+        barra.progress(100)
+        texto_estado.markdown("## ✅ ¡TU KARAOKE ESTÁ LISTO!")
+        st.balloons()
+        
+        st.video(archivo_salida)
+        with open(archivo_salida, "rb") as file:
+            st.download_button("📥 DESCARGAR", data=file, 
+                               file_name=f"GoyoKaraoke_{formato.split()[0]}.mp4", mime="video/mp4")
+        
+        st.markdown("### 📝 Letra detectada:")
+        st.info(letra)
