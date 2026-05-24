@@ -1,7 +1,7 @@
 import streamlit as st
 import whisper
 import os
-from moviepy.editor import ColorClip, CompositeVideoClip
+from moviepy.editor import ColorClip, CompositeVideoClip, ImageClip
 
 # --- 1. DISEÑO PREMIUM ---
 def aplicar_estilo_goyo():
@@ -51,21 +51,28 @@ if audio_file is not None:
 
         # PASO 3: Generación de Video
         if st.button("🚀 2. GENERAR VIDEO FINAL"):
-            with st.spinner("Procesando video..."):
+            with st.spinner("Procesando video profesional..."):
                 ancho, alto = (1280, 720) if formato == "YouTube (16:9)" else (720, 1280)
                 
-                # Video limpio (sin recuadro amarillo)
-                video_final = ColorClip(size=(ancho, alto), color=(10, 10, 10)).set_duration(10)
+                # FONDO AZUL PROFESIONAL
+                video_base = ColorClip(size=(ancho, alto), color=(0, 0, 255)).set_duration(10)
+                
+                # LOGO POSICIONADO
+                if os.path.exists("logo.png"):
+                    logo = ImageClip("logo.png").resize(height=80)
+                    logo = logo.set_position(("right", "top")).set_duration(10)
+                    video_final = CompositeVideoClip([video_base, logo])
+                else:
+                    video_final = video_base
                 
                 archivo_salida = "karaoke_goyo.mp4"
                 video_final.write_videofile(archivo_salida, fps=24, codec="libx264", audio=ruta_audio)
                 
-                st.success("¡Video generado con éxito!")
+                st.success("¡Video generado con fondo azul y logo!")
                 st.video(archivo_salida)
                 
                 with open(archivo_salida, "rb") as file:
-                    st.download_button("📥 DESCARGAR", data=file, 
-                                       file_name="GoyoKaraoke.mp4", mime="video/mp4")
+                    st.download_button("📥 DESCARGAR", data=file, file_name="GoyoKaraoke.mp4", mime="video/mp4")
                 
-                st.markdown("### 📝 Letra definitiva:")
+                st.markdown("### 📝 Letra definitiva para tu edición:")
                 st.info(st.session_state.letra)
