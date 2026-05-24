@@ -26,22 +26,22 @@ url = st.text_input("Pega el enlace de YouTube aquí:")
 
 if url:
     try:
-        # Visualización previa del video
+        # Visualización previa
         st.video(url)
         
         formato = st.radio("¿Qué deseas descargar?", ("Video (MP4)", "Solo Audio (MP3)"))
         
         if st.button("🚀 INICIAR DESCARGA"):
             barra = st.progress(0)
-            st.write("🔄 Procesando video...")
             
             yt = YouTube(url)
-            barra.progress(50)
+            barra.progress(30)
             
             if formato == "Video (MP4)":
-                stream = yt.streams.get_highest_resolution()
+                # Filtramos por streams que tengan video y audio
+                stream = yt.streams.filter(progressive=True, file_extension='mp4').first()
             else:
-                stream = yt.streams.get_audio_only()
+                stream = yt.streams.filter(only_audio=True).first()
                 
             stream.download(filename="descarga_goyo")
             barra.progress(100)
@@ -51,4 +51,4 @@ if url:
                 st.download_button("📥 DESCARGAR ARCHIVO", f, file_name="GoyoDescarga.mp4")
                 
     except Exception as e:
-        st.error("No se pudo cargar el video. Intenta con otro enlace.")
+        st.error("No se pudo cargar el video. Revisa el enlace o intenta de nuevo.")
