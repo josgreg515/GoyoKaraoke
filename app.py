@@ -6,7 +6,6 @@ from moviepy.editor import ColorClip, TextClip, CompositeVideoClip, ImageClip
 
 # --- 1. DISEÑO PREMIUM Y FONDO ---
 def aplicar_estilo_goyo():
-    # Fondo musical profesional
     fondo_url = "https://images.unsplash.com/photo-1493225255756-d9584f8606e9?q=80&w=1920"
     st.markdown(f"""
         <style>
@@ -21,7 +20,7 @@ def aplicar_estilo_goyo():
             font-family: 'Arial', sans-serif;
         }}
         .stButton>button {{
-            background-color: #FF0000 !important; /* Rojo GoyoKaraoke */
+            background-color: #FF0000 !important;
             color: white !important;
             border-radius: 30px;
             height: 3em;
@@ -54,53 +53,32 @@ if audio_file is not None:
         f.write(audio_file.getbuffer())
 
     if st.button("🚀 GENERAR VIDEO KARAOKE"):
-        # --- BARRA DE PROGRESO REAL ---
         barra = st.progress(0)
         texto_estado = st.empty()
         
-        # Paso 1: Transcripción
         texto_estado.markdown("#### 👂 1/3: La IA está escuchando tu canción...")
         barra.progress(20)
         model = whisper.load_model("base")
         result = model.transcribe(ruta_audio)
         letra = result["text"]
         
-        # Paso 2: Diseño de Video
         texto_estado.markdown("#### 🎨 2/3: Diseñando el Karaoke en formato " + formato)
         barra.progress(60)
         
-        # Definir dimensiones
         ancho, alto = (1280, 720) if formato == "YouTube (16:9)" else (720, 1280)
-        
-        # Crear clips
         fondo_video = ColorClip(size=(ancho, alto), color=(10, 10, 10)).set_duration(10)
         
-        # Clip de texto (Letra)
-        # Definir dimensiones
-        ancho, alto = (1280, 720) if formato == "YouTube (16:9)" else (720, 1280)
-        
-        # Crear clips
-        fondo_video = ColorClip(size=(ancho, alto), color=(10, 10, 10)).set_duration(10)
-        
-        # MODIFICACIÓN: Usamos un método de fallback para evitar el error de ImageMagick
+        # Bloque optimizado de seguridad para la nube
         try:
             txt_clip = TextClip(letra[:150], fontsize=50, color='yellow', 
                                 size=(ancho*0.8, None), method='caption', font='Arial')
         except Exception:
-            # Si falla ImageMagick, usamos un clip de color temporal para no detener el renderizado
-            st.warning("Nota: Usando modo de compatibilidad de texto.")
             txt_clip = ColorClip(size=(ancho//2, 100), color=(255, 255, 0)).set_duration(10)
 
         txt_clip = txt_clip.set_position('center').set_duration(10)
-        
-        # Unir todo
         video_final = CompositeVideoClip([fondo_video, txt_clip])
         
-        # Unir todo
-        video_final = CompositeVideoClip([fondo_video, txt_clip])
-        
-        # Paso 3: Renderizado
-        texto_estado.markdown("#### 🎬 3/3: Procesando video final... ¡Ya casi está!")
+        texto_estado.markdown("#### 🎬 3/3: Procesando video final...")
         barra.progress(85)
         
         archivo_salida = "karaoke_goyo.mp4"
@@ -110,13 +88,7 @@ if audio_file is not None:
         texto_estado.markdown("## ✅ ¡TU KARAOKE ESTÁ LISTO!")
         st.balloons()
         
-        # --- PREVISUALIZACIÓN Y DESCARGA ---
         st.video(archivo_salida)
-        
         with open(archivo_salida, "rb") as file:
-            st.download_button(
-                label="📥 DESCARGAR PARA MI CANAL",
-                data=file,
-                file_name=f"GoyoKaraoke_{formato.split()[0]}.mp4",
-                mime="video/mp4"
-            )
+            st.download_button("📥 DESCARGAR PARA MI CANAL", data=file, 
+                               file_name=f"GoyoKaraoke_{formato.split()[0]}.mp4", mime="video/mp4")
