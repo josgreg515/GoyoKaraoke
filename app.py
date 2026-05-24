@@ -1,8 +1,7 @@
 import streamlit as st
 import whisper
 import os
-import time
-from moviepy.editor import ColorClip, CompositeVideoClip, ImageClip, TextClip
+from moviepy.editor import ColorClip, CompositeVideoClip, ImageClip
 
 # --- 1. DISEÑO PREMIUM ---
 def aplicar_estilo_goyo():
@@ -42,48 +41,45 @@ if audio_file is not None:
     ruta_audio = os.path.abspath("temp_audio.mp3")
     with open(ruta_audio, "wb") as f: f.write(audio_file.getbuffer())
 
-    if st.button("🚀 GENERAR VIDEO KARAOKE"):
-        barra = st.progress(0)
-        texto_estado = st.empty()
-        
-        # Paso 1: Transcripción
-        texto_estado.markdown("#### 👂 1/3: La IA está escuchando tu canción...")
-        barra.progress(20)
-        model = whisper.load_model("base")
-        result = model.transcribe(ruta_audio)
-        st.session_state.letra = result["text"]
-        
-        # Paso 2: Diseño de Video
-        texto_estado.markdown("#### 🎨 2/3: Diseñando el Karaoke...")
-        barra.progress(60)
-        ancho, alto = (1280, 720) if formato == "YouTube (16:9)" else (720, 1280)
-        
-        # FONDO AZUL (0, 0, 255)
-        video_base = ColorClip(size=(ancho, alto), color=(0, 0, 255)).set_duration(10)
-        
-        # LOGO (Escudo de protección: solo si existe, no rompe si falla)
-        try:
+    # PASO 1: Transcripción con barra de progreso
+    if st.button("👂 1. ANALIZAR LETRA"):
+        with st.spinner("La IA está escuchando..."):
+            model = whisper.load_model("base")
+            result = model.transcribe(ruta_audio)
+            st.session_state.letra = result["text"]
+            st.success("¡Letra analizada!")
+
+    # PASO 2: Revisión de Letra
+    if st.session_state.letra:
+        st.markdown("### ✍️ Corrige la letra (esto se mostrará en pantalla):")
+        st.session_state.letra = st.text_area("Edita la letra aquí:", st.session_state.letra, height=150)
+
+        # PASO 3: Generación de Video SIN ERRORES
+        if st.button("🚀 2. GENERAR VIDEO BASE"):
+            barra = st.progress(0)
+            
+            ancho, alto = (1280, 720) if formato == "YouTube (16:9)" else (720, 1280)
+            
+            # Fondo Azul (0, 0, 255)
+            video_base = ColorClip(size=(ancho, alto), color=(0, 0, 255)).set_duration(10)
+            barra.progress(50)
+            
+            # Logo arriba derecha
             if os.path.exists("logo.png"):
                 logo = ImageClip("logo.png").resize(height=100).set_position(("right", "top")).set_duration(10)
                 video_final = CompositeVideoClip([video_base, logo])
             else:
                 video_final = video_base
-        except:
-            video_final = video_base
-        
-        # Paso 3: Renderizado
-        texto_estado.markdown("#### 🎬 3/3: Procesando video...")
-        barra.progress(85)
-        archivo_salida = "karaoke_goyo.mp4"
-        video_final.write_videofile(archivo_salida, fps=24, codec="libx264", audio=ruta_audio)
-        
-        barra.progress(100)
-        texto_estado.markdown("## ✅ ¡TU KARAOKE ESTÁ LISTO!")
-        st.balloons()
-        
-        st.video(archivo_salida)
-        with open(archivo_salida, "rb") as file:
-            st.download_button("📥 DESCARGAR", data=file, file_name="GoyoKaraoke.mp4", mime="video/mp4")
-        
-        st.markdown("### 📝 Letra detectada:")
-        st.info(st.session_state.letra)
+            
+            archivo_salida = "karaoke_goyo.mp4"
+            video_final.write_videofile(archivo_salida, fps=24, codec="libx264", audio=ruta_audio)
+            
+            barra.progress(100)
+            st.success("¡Tu video base está listo!")
+            st.video(archivo_salida)
+            
+            with open(archivo_salida, "rb") as file:
+                st.download_button("📥 DESCARGAR VIDEO BASE", data=file, 
+                                   file_name="GoyoKaraoke_Base.mp4", mime="video/mp4")
+            
+            st.info("💡 Consejo: Usa tu editor de video favorito (CapCut/Premiere) para añadir la letra que acabas de corregir sobre este fondo azul.")
